@@ -14,7 +14,6 @@ int sudoku_grid[9][9];
 bool check_columns(){
 
     for(int i = 0; i < 9; i++){
-
         // esta lista de booleanos sera para saber si estan todos los numeros del 1 al 9
         // por ejemplo si encontramos un numero num = 6 en la columna, en el arreglo la posicion
         // list[n - 1] = true, osea la sexta posicion en el array (indice 5) sera verdadero
@@ -24,24 +23,16 @@ bool check_columns(){
 
         for(int j = 0; j < 9; j++){
             int num = sudoku_grid[j][i];
-            printf("%i\n", num);
             list[num - 1] = true;
         }
 
         for(int b = 0; b < 9; b++){
-
             //encontramos un valor falso dentro de la lista
-            if(!list[b]){
-                printf("\n");
-                return false;
-            }
+            if(!list[b]) return false;
         }
-        printf("\n");
     }
-
     // llegados a este punto, quiere decir que todas las columnas tenian todos los numeros del 1 al 9
     return true;
-    
 }
 
 bool check_rows(){
@@ -54,27 +45,36 @@ bool check_rows(){
 
         for(int j = 0; j < 9; j++){
             int num = sudoku_grid[i][j];
-            printf("%i", num);
             list[num - 1] = true;
         }
 
         for(int b = 0; b < 9; b++){
 
             //encontramos un valor falso dentro de la lista
-            if(!list[b]){
-                printf("\n");
-                return false;
-            }
+            if(!list[b]) return false;
         }
-        printf("\n");
     }
-
     // llegados a este punto, quiere decir que todas las filas tenian todos los numeros del 1 al 9
     return true;
-    
 }
 
 bool check3x3subset(int row_num, int col_num){
+    bool list[9] = {false};
+
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            int num = sudoku_grid[row_num + i][col_num + j];
+            list[num - 1] = true;
+        }
+    }
+
+    for (int b = 0; b < 9; b++) {
+        if (list[b] == false) {
+            return false;
+        }
+    }
+
+    return true;
 
 }
 
@@ -143,6 +143,7 @@ int main(int argc, char *argv[])
 
     printf("Todas las columnas son correctas? %s\n", check_columns() ? "true" : "false");
     printf("Todas las filas son correctas? %s\n", check_rows() ? "true" : "false");
+    printf("El subset es correcto? %s\n", check3x3subset(0,0) ? "true" : "false");
     
     return 0;
 }
