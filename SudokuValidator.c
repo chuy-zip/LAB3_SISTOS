@@ -10,7 +10,6 @@
 // Declarar la matriz global para el sudoku
 int sudoku_grid[9][9];
 
-
 bool check_columns(){
 
     for(int i = 0; i < 9; i++){
@@ -40,7 +39,7 @@ bool check_rows(){
 
         // para las filas es la misma idea que con las columnas
         // al final veremos si hay algun false en la lista, y si lo hay la funcion retorna false
-        // ya que quiere decir que hay alguna columna que no cumple con tener todos los numeros del 1 al 9
+        // ya que quiere decir que hay alguna fila que no cumple con tener todos los numeros del 1 al 9
         bool list[9] = {false};
 
         for(int j = 0; j < 9; j++){
@@ -61,6 +60,8 @@ bool check_rows(){
 bool check3x3subset(int row_num, int col_num){
     bool list[9] = {false};
 
+    // mismo concepto que los otros 2 pero ahora no es para todo el tablero, sino que se obtiene
+    // una coordenada inicial
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             int num = sudoku_grid[row_num + i][col_num + j];
@@ -106,6 +107,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    if (file_size != 81) {
+        printf("Error: El archivo debe contener exactamente 81 numeros.\n");
+        munmap(file_content, file_size);
+        close(fd);
+        return 1;
+    }
+
     // Cargar el contenido del archivo en la matriz sudoku_grid
     int line_counter = 0;
     for (int i = 0; i < 81; i++)
@@ -144,6 +152,23 @@ int main(int argc, char *argv[])
     printf("Todas las columnas son correctas? %s\n", check_columns() ? "true" : "false");
     printf("Todas las filas son correctas? %s\n", check_rows() ? "true" : "false");
     printf("El subset es correcto? %s\n", check3x3subset(0,0) ? "true" : "false");
-    
+
+    bool salir = false;
+
+    for (int i = 0; i < 9 && !salir; i += 3) {
+        for (int j = 0; j < 9 && !salir; j += 3) {
+            // las coordenadas iniciales a revisar seran en este caso 
+            // (0,0) (0,3) (0,6)
+            // (3,0) (3,3) (3,6)
+            // (6,0) (6,3) (6,6)
+            if (!check3x3subset(i, j)) salir = true;
+        }
+    }
+
+    // si salir es verdadero, quiere decir que en algun punto algun subset no cumplio
+    // si salir es verdadero entonces todos los subsets no son correctos
+    printf("Todos los subsets 3x3 son correctos? %s\n", salir ? "false" : "true");
+
+
     return 0;
 }
