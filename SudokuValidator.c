@@ -5,9 +5,78 @@
 #include <fcntl.h>    
 #include <unistd.h>     
 #include <sys/mman.h>   
+#include <stdbool.h>
 
 // Declarar la matriz global para el sudoku
 int sudoku_grid[9][9];
+
+
+bool check_columns(){
+
+    for(int i = 0; i < 9; i++){
+
+        // esta lista de booleanos sera para saber si estan todos los numeros del 1 al 9
+        // por ejemplo si encontramos un numero num = 6 en la columna, en el arreglo la posicion
+        // list[n - 1] = true, osea la sexta posicion en el array (indice 5) sera verdadero
+        // al final veremos si hay algun false en la lista, y si lo hay la funcion retorna false
+        // ya que quiere decir que hay alguna columna que no cumple con tener todos los numeros del 1 al 9
+        bool list[9] = {false};
+
+        for(int j = 0; j < 9; j++){
+            int num = sudoku_grid[j][i];
+            printf("%i\n", num);
+            list[num - 1] = true;
+        }
+
+        for(int b = 0; b < 9; b++){
+
+            //encontramos un valor falso dentro de la lista
+            if(!list[b]){
+                printf("\n");
+                return false;
+            }
+        }
+        printf("\n");
+    }
+
+    // llegados a este punto, quiere decir que todas las columnas tenian todos los numeros del 1 al 9
+    return true;
+    
+}
+
+bool check_rows(){
+    for(int i = 0; i < 9; i++){
+
+        // para las filas es la misma idea que con las columnas
+        // al final veremos si hay algun false en la lista, y si lo hay la funcion retorna false
+        // ya que quiere decir que hay alguna columna que no cumple con tener todos los numeros del 1 al 9
+        bool list[9] = {false};
+
+        for(int j = 0; j < 9; j++){
+            int num = sudoku_grid[i][j];
+            printf("%i", num);
+            list[num - 1] = true;
+        }
+
+        for(int b = 0; b < 9; b++){
+
+            //encontramos un valor falso dentro de la lista
+            if(!list[b]){
+                printf("\n");
+                return false;
+            }
+        }
+        printf("\n");
+    }
+
+    // llegados a este punto, quiere decir que todas las filas tenian todos los numeros del 1 al 9
+    return true;
+    
+}
+
+bool check3x3subset(int row_num, int col_num){
+
+}
 
 int main(int argc, char *argv[])
 {
@@ -72,5 +141,8 @@ int main(int argc, char *argv[])
         printf("\n");
     }
 
+    printf("Todas las columnas son correctas? %s\n", check_columns() ? "true" : "false");
+    printf("Todas las filas son correctas? %s\n", check_rows() ? "true" : "false");
+    
     return 0;
 }
