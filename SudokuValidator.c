@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>    
-#include <unistd.h>     
-#include <sys/mman.h>   
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
 #include <stdbool.h>
+#include <sys/wait.h>
 
 // Declarar la matriz global para el sudoku
 int sudoku_grid[9][9];
@@ -169,6 +170,34 @@ int main(int argc, char *argv[])
     // si salir es verdadero entonces todos los subsets no son correctos
     printf("Todos los subsets 3x3 son correctos? %s\n", salir ? "false" : "true");
 
+    pid_t parent_pid = getpid();
+    printf("PID del proceso padre: %d\n", parent_pid);
+
+    // Ejecutar fork()
+    pid_t child_pid = fork();
+
+    if (child_pid == -1) {
+        perror("Error al hacer fork");
+        return 1;
+    }
+
+    if (child_pid == 0) {
+        // Código del proceso hijo
+        char parent_pid_str[20];
+        sprintf(parent_pid_str, "%d", parent_pid); // Convertir el PID a texto
+
+        // Ejecutar el comando ps -p <#proc> -lLf
+        execlp("ps", "ps", "-p", parent_pid_str, "-lLf", NULL);
+
+        // Si execlp falla
+        perror("Error al ejecutar execlp");
+        exit(1);
+    } else {
+        // Código del proceso padre
+        // Esperar a que el proceso hijo termine
+        wait(NULL);
+    }
 
     return 0;
+
 }
