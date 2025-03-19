@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <sys/syscall.h> // Para syscall(SYS_gettid)
 #include <sys/wait.h>    // Para wait()
+#include <omp.h>
 
 // Declarar la matriz global para el sudoku
 int sudoku_grid[9][9];
@@ -17,6 +18,7 @@ bool columns_valid = false;
 void* check_columns_thread(void* arg){
     printf("El hilo que ejecuta la revision de columnas es: %ld\n", syscall(SYS_gettid));
 
+    #pragma omp parallel for
     for(int i = 0; i < 9; i++){
         printf("ID del hilo en ejecucion (dentro del forloop en check_columns_thread): %ld\n", syscall(SYS_gettid));
         // esta lista de booleanos sera para saber si estan todos los numeros del 1 al 9
@@ -35,7 +37,6 @@ void* check_columns_thread(void* arg){
             //encontramos un valor falso dentro de la lista
             if (!list[b]) {
                 columns_valid = false;
-                pthread_exit(0);
             }
         }
     }
@@ -45,6 +46,10 @@ void* check_columns_thread(void* arg){
 }
 
 bool check_rows(){
+
+    bool all_rows_valid = true;
+
+    #pragma omp parallel for
     for(int i = 0; i < 9; i++){
 
         // para las filas es la misma idea que con las columnas
@@ -60,11 +65,13 @@ bool check_rows(){
         for(int b = 0; b < 9; b++){
 
             //encontramos un valor falso dentro de la lista
-            if(!list[b]) return false;
+            if (!list[b]) {
+                all_rows_valid = false;
+            }
         }
     }
     // llegados a este punto, quiere decir que todas las filas tenian todos los numeros del 1 al 9
-    return true;
+    return all_rows_valid;
 }
 
 bool check3x3subset(int row_num, int col_num){
@@ -72,6 +79,7 @@ bool check3x3subset(int row_num, int col_num){
 
     // mismo concepto que los otros 2 pero ahora no es para todo el tablero, sino que se obtiene
     // una coordenada inicial
+    #pragma omp parallel for
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             int num = sudoku_grid[row_num + i][col_num + j];
@@ -159,19 +167,18 @@ int main(int argc, char *argv[])
         printf("\n");
     }
 
-    
-
+    // ver los subsets de 3x3
     bool subsets_valid = true;
     // ver los subsets de 3x3
     for (int i = 0; i < 9 && subsets_valid; i += 3) {
         for (int j = 0; j < 9 && subsets_valid; j += 3) {
-            // las coordenadas iniciales a revisar seran en este caso 
-            // (0,0) (0,3) (0,6)
-            // (3,0) (3,3) (3,6)
-            // (6,0) (6,3) (6,6)
-            if (!check3x3subset(i, j)) subsets_valid = false;
+            if (!check3x3subset(i, j)) {
+                subsets_valid = false;
+                break;
+            }
         }
     }
+
 
     // si salir es verdadero, quiere decir que en algun punto algun subset no cumplio
     // si salir es verdadero entonces todos los subsets no son correctos
@@ -194,7 +201,7 @@ int main(int argc, char *argv[])
         sprintf(parent_pid_str, "%d", parent_pid); // Convertir el PID a texto
 
         // Ejecutar el comando ps -p <#proc> -lLf
-        printf("El hijo va a ejectuar ps:");
+        printf("El hijo va a ejectuar ps:\n");
         execlp("ps", "ps", "-p", parent_pid_str, "-lLf", NULL);
 
         // Si execlp falla
