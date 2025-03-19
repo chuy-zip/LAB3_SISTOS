@@ -15,8 +15,10 @@ int sudoku_grid[9][9];
 bool columns_valid = false;
 
 void* check_columns_thread(void* arg){
+    printf("El hilo que ejecuta la revision de columnas es: %ld\n", syscall(SYS_gettid));
 
     for(int i = 0; i < 9; i++){
+        printf("ID del hilo en ejecucion (dentro del forloop en check_columns_thread): %ld\n", syscall(SYS_gettid));
         // esta lista de booleanos sera para saber si estan todos los numeros del 1 al 9
         // por ejemplo si encontramos un numero num = 6 en la columna, en el arreglo la posicion
         // list[n - 1] = true, osea la sexta posicion en el array (indice 5) sera verdadero
@@ -33,13 +35,13 @@ void* check_columns_thread(void* arg){
             //encontramos un valor falso dentro de la lista
             if (!list[b]) {
                 columns_valid = false;
-                return NULL;
+                pthread_exit(0);
             }
         }
     }
     // llegados a este punto, quiere decir que todas las columnas tenian todos los numeros del 1 al 9
     columns_valid = true;
-    return NULL;
+    pthread_exit(0);
 }
 
 bool check_rows(){
@@ -176,7 +178,7 @@ int main(int argc, char *argv[])
     printf("Todos los subsets 3x3 son correctos? %s\n", subsets_valid ? "true" : "false");
 
     pid_t parent_pid = getpid();
-    printf("PID del proceso padre (el main): %d\n", parent_pid);
+    //printf("PID del proceso padre (el main): %d\n", parent_pid);
 
     // Ejecutar fork()
     pid_t child_pid = fork();
@@ -192,6 +194,7 @@ int main(int argc, char *argv[])
         sprintf(parent_pid_str, "%d", parent_pid); // Convertir el PID a texto
 
         // Ejecutar el comando ps -p <#proc> -lLf
+        printf("El hijo va a ejectuar ps:");
         execlp("ps", "ps", "-p", parent_pid_str, "-lLf", NULL);
 
         // Si execlp falla
@@ -214,12 +217,37 @@ int main(int argc, char *argv[])
         // Revisar las filas en el proceso padre
         bool rows_valid = check_rows();
 
-
         // es valido el sudoku?
         bool sudoku_valid = columns_valid && rows_valid && subsets_valid;
         printf("La solución del sudoku es %s\n", sudoku_valid ? "válida" : "inválida");
 
         wait(NULL);
+
+        // Ejecutar un nuevo fork() para el segundo hijo (ps -p <#proc> -lLf)
+        pid_t child_pid2 = fork();
+
+        if (child_pid2 == -1) {
+            perror("Error al hacer fork");
+            return 1;
+        }
+
+        if (child_pid2 == 0) {
+            // Código del segundo proceso hijo
+            char parent_pid_str[20];
+            sprintf(parent_pid_str, "%d", parent_pid); // Convertir el PID a texto
+
+            // Ejecutar el comando ps -p <#proc> -lLf
+            printf("El segundo hijo hace el comando ps antes de terminar\n");
+            execlp("ps", "ps", "-p", parent_pid_str, "-lLf", NULL);
+
+            // Si execlp falla
+            perror("Error al ejecutar execlp");
+            exit(1);
+        }
+
+        // Esperar al segundo proceso hijo
+        wait(NULL);
+
     }
 
     return 0;
