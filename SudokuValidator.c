@@ -52,7 +52,7 @@ bool check_rows(){
     bool all_rows_valid = true;
 
     omp_set_nested(true); 
-    omp_set_num_threads(9); 
+    omp_set_num_threads(2); 
     #pragma omp parallel for schedule(dynamic)
     for(int i = 0; i < 9; i++){
 
@@ -82,7 +82,7 @@ bool check3x3subset(int row_num, int col_num){
     bool list[9] = {false};
 
     omp_set_nested(true); 
-    omp_set_num_threads(9); 
+    omp_set_num_threads(2); 
     
     // mismo concepto que los otros 2 pero ahora no es para todo el tablero, sino que se obtiene
     // una coordenada inicial
