@@ -18,7 +18,9 @@ bool columns_valid = false;
 void* check_columns_thread(void* arg){
     printf("El hilo que ejecuta la revision de columnas es: %ld\n", syscall(SYS_gettid));
 
-    #pragma omp parallel for
+    omp_set_nested(true); 
+    omp_set_num_threads(2); 
+    #pragma omp parallel for schedule(dynamic)
     for(int i = 0; i < 9; i++){
         printf("ID del hilo en ejecucion (dentro del forloop en check_columns_thread): %ld\n", syscall(SYS_gettid));
         // esta lista de booleanos sera para saber si estan todos los numeros del 1 al 9
@@ -49,7 +51,9 @@ bool check_rows(){
 
     bool all_rows_valid = true;
 
-    #pragma omp parallel for
+    omp_set_nested(true); 
+    omp_set_num_threads(9); 
+    #pragma omp parallel for schedule(dynamic)
     for(int i = 0; i < 9; i++){
 
         // para las filas es la misma idea que con las columnas
@@ -77,9 +81,12 @@ bool check_rows(){
 bool check3x3subset(int row_num, int col_num){
     bool list[9] = {false};
 
+    omp_set_nested(true); 
+    omp_set_num_threads(9); 
+    
     // mismo concepto que los otros 2 pero ahora no es para todo el tablero, sino que se obtiene
     // una coordenada inicial
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             int num = sudoku_grid[row_num + i][col_num + j];
@@ -99,6 +106,8 @@ bool check3x3subset(int row_num, int col_num){
 
 int main(int argc, char *argv[])
 {
+    omp_set_num_threads(1);
+
     if (argc != 2)
     {
         printf("Uso: %s <nombre_del_archivo>\n", argv[0]);
