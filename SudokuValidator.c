@@ -6,12 +6,15 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <stdbool.h>
-#include <sys/wait.h>
+#include <sys/syscall.h> // Para syscall(SYS_gettid)
+#include <sys/wait.h>    // Para wait()
 
 // Declarar la matriz global para el sudoku
 int sudoku_grid[9][9];
 
-bool check_columns(){
+bool columns_valid = false;
+
+void* check_columns_thread(void* arg){
 
     for(int i = 0; i < 9; i++){
         // esta lista de booleanos sera para saber si estan todos los numeros del 1 al 9
@@ -28,11 +31,15 @@ bool check_columns(){
 
         for(int b = 0; b < 9; b++){
             //encontramos un valor falso dentro de la lista
-            if(!list[b]) return false;
+            if (!list[b]) {
+                columns_valid = false;
+                return NULL;
+            }
         }
     }
     // llegados a este punto, quiere decir que todas las columnas tenian todos los numeros del 1 al 9
-    return true;
+    columns_valid = true;
+    return NULL;
 }
 
 bool check_rows(){
@@ -150,28 +157,26 @@ int main(int argc, char *argv[])
         printf("\n");
     }
 
-    printf("Todas las columnas son correctas? %s\n", check_columns() ? "true" : "false");
-    printf("Todas las filas son correctas? %s\n", check_rows() ? "true" : "false");
-    printf("El subset es correcto? %s\n", check3x3subset(0,0) ? "true" : "false");
+    
 
-    bool salir = false;
-
-    for (int i = 0; i < 9 && !salir; i += 3) {
-        for (int j = 0; j < 9 && !salir; j += 3) {
+    bool subsets_valid = true;
+    // ver los subsets de 3x3
+    for (int i = 0; i < 9 && subsets_valid; i += 3) {
+        for (int j = 0; j < 9 && subsets_valid; j += 3) {
             // las coordenadas iniciales a revisar seran en este caso 
             // (0,0) (0,3) (0,6)
             // (3,0) (3,3) (3,6)
             // (6,0) (6,3) (6,6)
-            if (!check3x3subset(i, j)) salir = true;
+            if (!check3x3subset(i, j)) subsets_valid = false;
         }
     }
 
     // si salir es verdadero, quiere decir que en algun punto algun subset no cumplio
     // si salir es verdadero entonces todos los subsets no son correctos
-    printf("Todos los subsets 3x3 son correctos? %s\n", salir ? "false" : "true");
+    printf("Todos los subsets 3x3 son correctos? %s\n", subsets_valid ? "true" : "false");
 
     pid_t parent_pid = getpid();
-    printf("PID del proceso padre: %d\n", parent_pid);
+    printf("PID del proceso padre (el main): %d\n", parent_pid);
 
     // Ejecutar fork()
     pid_t child_pid = fork();
@@ -192,9 +197,28 @@ int main(int argc, char *argv[])
         // Si execlp falla
         perror("Error al ejecutar execlp");
         exit(1);
-    } else {
-        // Código del proceso padre
-        // Esperar a que el proceso hijo termine
+
+    } else { // codigo del padre
+        pthread_t column_thread;
+        pthread_create(&column_thread, NULL, check_columns_thread, NULL);
+
+        // Esperar a que el hilo termine
+        pthread_join(column_thread, NULL);
+
+        // Mostrar el ID del hilo en ejecución
+        printf("ID del hilo en ejecución: %ld\n", syscall(SYS_gettid));
+
+        // Esperar a que el primer proceso hijo termine
+        wait(NULL);
+
+        // Revisar las filas en el proceso padre
+        bool rows_valid = check_rows();
+
+
+        // es valido el sudoku?
+        bool sudoku_valid = columns_valid && rows_valid && subsets_valid;
+        printf("La solución del sudoku es %s\n", sudoku_valid ? "válida" : "inválida");
+
         wait(NULL);
     }
 
